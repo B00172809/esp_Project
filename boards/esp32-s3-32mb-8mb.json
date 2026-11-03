@@ -1,0 +1,40 @@
+{
+  "build": {
+    "arduino": {
+      "memory_type": "opi_opi"
+    },
+    "core": "esp32",
+    "extra_flags": "-DBOARD_HAS_PSRAM -DARDUINO_USB_CDC_ON_BOOT=0 -DARDUINO_USB_MODE=0",
+    "f_cpu": "240000000L",
+    "f_flash": "80000000L",
+    "flash_mode": "opi",
+    "mcu": "esp32s3",
+    "psram_type": "opi",
+    "variant": "esp32s3"
+  },
+  "connectivity": [
+    "wifi",
+    "bluetooth"
+  ],
+  "debug": {
+    "openocd_target": "esp32s3.cfg"
+  },
+  "frameworks": [
+    "arduino",
+    "esp-idf"
+  ],
+  "name": "ESP32-S3 32MB Flash 8MB PSRAM",
+  "upload": {
+    "flash_size": "32MB",
+    "maximum_ram_size": 327680,
+    "maximum_size": 33554432,
+    "protocols": [
+      "esptool",
+      "iocat"
+    ],
+    "require_upload_port": true,
+    "speed": 460800
+  },
+  "url": "https://docs.espressif.com/",
+  "vendor": "espressif"
+}
