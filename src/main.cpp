@@ -6,6 +6,7 @@
 #include <Adafruit_ST7789.h>                //Controls our display
 #include <Adafruit_BMP280.h>                //Reads values from sensor
 
+
 /* Block 2: Pin Defines */
 //Pins on TFT as per GPIO values on physical board
 #define TFT_CS 4
@@ -21,37 +22,39 @@ const int joyX = 1;
 const int joyY = 2;
 const int joyButton = 7;
 
+
 /* Block 3: Variables */
 //Create objects for display (tft) and sensor (bmp) from Library classes
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 Adafruit_BMP280 bmp;
 
-int menuOption = 0;                        // Which (of 3) options is highlighted on the menu (0 = pressure hPa, 1 = pressure mbar, 2 = temperature C)
-int currentPage = 0;                       // Which page is displayed (0 = menu, 1 = pressure hPa, 2 = pressure mbar, 3 = temperature C)
+int highlightOption = 0;                        // Which (of 3) options is highlighted on the menu (0 = pressure hPa, 1 = pressure mbar, 2 = temperature C)
+int openPage = 0;                       // Which page is displayed (0 = menu, 1 = pressure hPa, 2 = pressure mbar, 3 = temperature C)
 bool lastButton = HIGH;                    // Detects joystick click (display highlighted option)
 
-//
-unsigned long lastMove = 0;
-unsigned long lastUpdate = 0;
+unsigned long lastMove = 0;                // Stores time of last joystick movement (to prevent fast scrolling)
+unsigned long lastUpdate = 0;              // Stores time of last sensor display update (refresh per 1 sec)
 
-// Display the main menu
+
+/* Block 4: Main Menu */
 void showMenu() {
-  tft.fillScreen(ST77XX_BLACK);
-  tft.setCursor(0, 20);
-  tft.setTextSize(2);
+  tft.fillScreen(ST77XX_BLACK);           //clears screen
+  tft.setCursor(0, 20);                   // positions text top left corner
+  tft.setTextSize(2);                     
   tft.setTextColor(ST77XX_WHITE);
 
-  tft.println("Main Menu");
-  tft.println();
+  tft.println("Main Menu\n");
 
+  //The options on screen to be selected - stored in array
   const char* options[] = {
     "Pressure hPa",
     "Pressure mbar",
     "Temperature C"
   };
 
+  //prints menu options + highlights the selected one
   for (int i = 0; i < 3; i++) {
-    if (i == menuOption) {
+    if (i == highlightOption) {
       tft.print("> ");
     }
     else {
@@ -62,33 +65,31 @@ void showMenu() {
   }
 }
 
-// Display the selected sensor page
+/* Block 5: Selected Pages*/
+//default configurations for all three pages
 void showPage() {
   tft.fillScreen(ST77XX_BLACK);
   tft.setCursor(0, 20);
   tft.setTextSize(2);
   tft.setTextColor(ST77XX_WHITE);
 
-  if (currentPage == 1) {
-    tft.println("Pressure (hPa)");
-    tft.println();
+  if (openPage == 1) {
+    tft.println("Pressure (hPa)\n");
     tft.println(bmp.readPressure() / 100.0);
   }
-  else if (currentPage == 2) {
-    tft.println("Pressure (mbar)");
-    tft.println();
+  else if (openPage == 2) {
+    tft.println("Pressure (mbar)\n");
     tft.println(bmp.readPressure() / 100.0);
   }
-  else if (currentPage == 3) {
-    tft.println("Temperature (C)");
-    tft.println();
+  else if (openPage == 3) {
+    tft.println("Temperature (C)\n");
     tft.println(bmp.readTemperature());
   }
 
-  tft.println();
-  tft.println("Press to return");
+  tft.println("\nPress to return");
 }
 
+/* Block 6:*/
 void setup() {
   Serial.begin(115200);
 
@@ -120,20 +121,20 @@ void loop() {
   bool buttonState = digitalRead(joyButton);
 
   // Navigate menu using joystick
-  if (currentPage == 0 && millis() - lastMove > 250) {
+  if (openPage == 0 && millis() - lastMove > 250) {
 
     if (yValue < 1400) {
-      menuOption++;
-      if (menuOption > 2) {
-        menuOption = 0;
+      highlightOption++;
+      if (highlightOption > 2) {
+        highlightOption = 0;
       }
       showMenu();
       lastMove = millis();
     }
     else if (yValue > 2700) {
-      menuOption--;
-      if (menuOption < 0) {
-        menuOption = 2;
+      highlightOption--;
+      if (highlightOption < 0) {
+        highlightOption = 2;
       }
       showMenu();
       lastMove = millis();
@@ -142,12 +143,12 @@ void loop() {
 
   // Select page or return to menu
   if (buttonState == LOW && lastButton == HIGH) {
-    if (currentPage == 0) {
-      currentPage = menuOption + 1;
+    if (openPage == 0) {
+      openPage = highlightOption + 1;
       showPage();
     }
     else {
-      currentPage = 0;
+      openPage = 0;
       showMenu();
     }
   }
@@ -155,7 +156,7 @@ void loop() {
   lastButton = buttonState;
 
   // Update sensor reading every second
-  if (currentPage != 0 && millis() - lastUpdate >= 1000) {
+  if (openPage != 0 && millis() - lastUpdate >= 1000) {
     showPage();
     lastUpdate = millis();
   }
