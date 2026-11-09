@@ -6,7 +6,6 @@
 #include <Adafruit_ST7789.h>                //Controls our display
 #include <Adafruit_BMP280.h>                //Reads values from sensor
 
-
 /* Block 2: Pin Defines */
 //Pins on TFT as per GPIO values on physical board
 #define TFT_CS 4
