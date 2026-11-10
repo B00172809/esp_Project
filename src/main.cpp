@@ -95,75 +95,81 @@ void setup() {
   Serial.begin(115200);
 
   // Initialise joystick
-  pinMode(joyClick, INPUT_PULLUP);              // Clicked in, button state is LOW, not clicked in its HIGH
+  pinMode(joyClick, INPUT_PULLUP);              // Joystick Clicked = LOW, Not Clicked = HIGH
   analogReadResolution(12);                     // ADC is set to 12 bits as joyY and joyX are analog but joyClick is digital
 
   // Initialise screen
-  SPI.begin();
-  tft.init(240, 320);
-  tft.fillScreen(ST77XX_BLACK);
+  SPI.begin();                                
+  tft.init(240, 320);                          // Display [Width, Height] in pixels
+  tft.fillScreen(ST77XX_BLACK);                //Clears screen on startup to prevent undesierables
 
   // Initialise BMP280
-  Wire.begin(I2C_SDA, I2C_SCL);
+  Wire.begin(I2C_SDA, I2C_SCL);               //Initialises the pins the BMP280 sensor physically connects to on the i2c
 
 
-  /* Block 7:*/
-  if (!bmp.begin(0x76)) {
-    Serial.println("BMP280 not found");
-    tft.println("BMP280 not found");
+/* Block 7:BMP280 Detection test + Display Menu*/
+  if (!bmp.begin(0x76)) {                    //BMP280 sensor address is 0x76, uses ! so code continues on if it can begin but if it cant:
+    tft.println("BMP280 not found");        //prints on Screen if sensor is not detected
+    Serial.println("BMP280 not found");     //Does the same on Serial Montitor in case the screen is the issue
+    
+    //Endless delay so code wont continue without the BMP detection
     while (1) {
       delay(1000);
     }
   }
 
-  showMenu();
+  //with the risk eliminated of bad sensor detection, menu shows on screen
+  showMenu();                              
 }
 
-  /* Block 8: Main Loop */
+
+/* Block 8: Main Loop */
 void loop() {
-  int yValue = analogRead(joyY);
-  bool buttonState = digitalRead(joyClick);
+  int yAxis = analogRead(joyY);                                 //Stores joystick y-axis value (0-4095) inside int
+  bool buttonState = digitalRead(joyClick);                     //Reads joystick state: Low = Clicked, High = Not Clicked
 
-  // Navigate menu using joystick
-  if (openPage == 0 && millis() - lastMove > 250) {
+  // If main menu is dispalyed, & 250ms+ since last joystick movement: read joystick y-axis value to navigate menu
+  if (openPage == 0 && (millis() - lastMove) > 250) {            //millis counts milliseconds
 
-    if (yValue < 1400) {
-      highlightOption++;
-      if (highlightOption > 2) {
+    if (yAxis < 1400) {                                          //if joystick moves downward:
+      highlightOption++;                                         //highlight the option below it
+      if (highlightOption > 2) {                                 //if joystick descends on bottom option, send back to top
         highlightOption = 0;
       }
       showMenu();
       lastMove = millis();
     }
-    else if (yValue > 2700) {
-      highlightOption--;
-      if (highlightOption < 0) {
+    else if (yAxis > 2700) {                                    //if joystick moves upwards:
+      highlightOption--;                                        //highlight the option above it
+      if (highlightOption < 0) {                                //if joystick ascends on top option, send to bottom
         highlightOption = 2;
       }
-      showMenu();
-      lastMove = millis();
+      showMenu();                                               //update screen  to isplay the > beside the highlighted menu option
+      lastMove = millis();                                      //store the current ms time as its now the new last joystick movement
     }
   }
 
-  /* Block 9:*/
+
+/* Block 9:*/
   // Select page or return to menu
-  if (buttonState == LOW && lastButton == HIGH) {
+  if (buttonState == LOW && lastButton == HIGH) {               //if joystick is clicked (LOW) and it was not clicked before (HIGH)
     if (openPage == 0) {
-      openPage = highlightOption + 1;
-      showPage();
+      openPage = highlightOption + 1;                           //if clicking on main menu, open the highlighted options | +1 needed as main menu cant be highlighted
+      showPage();                                               //update screen to the new openPage
     }
     else {
-      openPage = 0;
+      openPage = 0;                                             //otherwise revert to main menu - stick click when already on one of the three pages
       showMenu();
     }
   }
 
-  /* Block 10:*/
-  lastButton = buttonState;
+
+/* Block 10: Button Memory*/
+  lastButton = buttonState;                                     //store the current button state as its now the new last button state
 
   // Update sensor reading every second
-  if (openPage != 0 && millis() - lastUpdate >= 1000) {
-    showPage();
-    lastUpdate = millis();
+  if (openPage != 0 && millis() - lastUpdate >= 1000) {         //if not on main menu and 1 second has passed since last update
+    showPage();                                                 //refresh screen with new info
+    lastUpdate = millis();                                      //store the current ms time as its now the new last update time
   }
 }
