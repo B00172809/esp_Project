@@ -20,7 +20,7 @@
 //Pins on Joystick as per esp32 GPIO values on physical board
 const int joyX = 1;
 const int joyY = 2;
-const int joyButton = 7;
+const int joyClick = 7;
 
 
 /* Block 3: Variables */
@@ -29,17 +29,17 @@ Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 Adafruit_BMP280 bmp;
 
 int highlightOption = 0;                        // Which (of 3) options is highlighted on the menu (0 = pressure hPa, 1 = pressure mbar, 2 = temperature C)
-int openPage = 0;                       // Which page is displayed (0 = menu, 1 = pressure hPa, 2 = pressure mbar, 3 = temperature C)
-bool lastButton = HIGH;                    // Detects joystick click (display highlighted option)
+int openPage = 0;                               // Which page is displayed (0 = menu, 1 = pressure hPa, 2 = pressure mbar, 3 = temperature C)
+bool lastButton = HIGH;                         // Detects joystick click (display highlighted option)
 
-unsigned long lastMove = 0;                // Stores time of last joystick movement (to prevent fast scrolling)
-unsigned long lastUpdate = 0;              // Stores time of last sensor display update (refresh per 1 sec)
+unsigned long lastMove = 0;                     // Stores time of last joystick movement (to prevent fast scrolling)
+unsigned long lastUpdate = 0;                   // Stores time of last sensor display update (refresh per 1 sec)
 
 
 /* Block 4: Main Menu */
 void showMenu() {
-  tft.fillScreen(ST77XX_BLACK);           //clears screen
-  tft.setCursor(0, 20);                   // positions text top left corner
+  tft.fillScreen(ST77XX_BLACK);                 //clears screen
+  tft.setCursor(0, 20);                         // positions text top left corner
   tft.setTextSize(2);                     
   tft.setTextColor(ST77XX_WHITE);
 
@@ -89,13 +89,14 @@ void showPage() {
   tft.println("\nPress to return");
 }
 
-/* Block 6:*/
+
+/* Block 6: Initialization */
 void setup() {
   Serial.begin(115200);
 
   // Initialise joystick
-  pinMode(joyButton, INPUT_PULLUP);
-  analogReadResolution(12);
+  pinMode(joyClick, INPUT_PULLUP);              // Clicked in, button state is LOW, not clicked in its HIGH
+  analogReadResolution(12);                     // ADC is set to 12 bits as joyY and joyX are analog but joyClick is digital
 
   // Initialise screen
   SPI.begin();
@@ -105,6 +106,8 @@ void setup() {
   // Initialise BMP280
   Wire.begin(I2C_SDA, I2C_SCL);
 
+
+  /* Block 7:*/
   if (!bmp.begin(0x76)) {
     Serial.println("BMP280 not found");
     tft.println("BMP280 not found");
@@ -116,9 +119,10 @@ void setup() {
   showMenu();
 }
 
+  /* Block 8: Main Loop */
 void loop() {
   int yValue = analogRead(joyY);
-  bool buttonState = digitalRead(joyButton);
+  bool buttonState = digitalRead(joyClick);
 
   // Navigate menu using joystick
   if (openPage == 0 && millis() - lastMove > 250) {
@@ -141,6 +145,7 @@ void loop() {
     }
   }
 
+  /* Block 9:*/
   // Select page or return to menu
   if (buttonState == LOW && lastButton == HIGH) {
     if (openPage == 0) {
@@ -153,6 +158,7 @@ void loop() {
     }
   }
 
+  /* Block 10:*/
   lastButton = buttonState;
 
   // Update sensor reading every second
